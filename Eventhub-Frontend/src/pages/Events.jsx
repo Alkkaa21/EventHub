@@ -1,11 +1,21 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // NEW
 
 const EVENTS_URL = "http://127.0.0.1:8000/events/";
 
 function Events() {
+  const navigate = useNavigate(); // NEW
+
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // NEW: runs when the logout button is clicked
+  function handleLogout() {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    navigate("/");
+  }
 
   useEffect(() => {
     async function fetchEvents() {
@@ -34,6 +44,8 @@ function Events() {
   return (
     <div>
       <h1>Events</h1>
+
+      <button onClick={handleLogout}>Logout</button> {/* NEW */}
 
       {events.length === 0 && <p>No events yet.</p>}
 
