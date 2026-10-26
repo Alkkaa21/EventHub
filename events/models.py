@@ -31,4 +31,4 @@ class Registration(models.Model):
     )
 
     def __str__(self):
-        return self.title
+        return f"{self.user.username} - {self.event.title}"
