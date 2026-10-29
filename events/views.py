@@ -5,6 +5,7 @@ from .models import Event, Registration
 from .serializers import EventSerializer, RegistrationSerializer
 
 
+
 class EventListView(APIView):
     def get(self, request):
         events = Event.objects.all()
@@ -39,3 +40,18 @@ class RegisterForEventView(APIView):
             return Response(serializer.data)
 
         return Response(serializer.errors)
+
+class MyRegistrationsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        registrations = Registration.objects.filter(
+            user=request.user
+        ).select_related("event")
+
+        serializer = RegistrationSerializer(
+            registrations,
+            many=True
+        )
+
+        return Response(serializer.data)

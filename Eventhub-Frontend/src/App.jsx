@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Events from "./pages/Events";
+import MyRegistrations from "./pages/MyRegistrations";
 
 function App() {
   return (
@@ -13,6 +14,14 @@ function App() {
   element={
     <ProtectedRoute>
       <Events />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/my-registrations"
+  element={
+    <ProtectedRoute>
+      <MyRegistrations />
     </ProtectedRoute>
   }
 />

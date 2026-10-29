@@ -83,6 +83,9 @@ function Events() {
       <h1>Events</h1>
 
       <button onClick={handleLogout}>Logout</button>
+      <button onClick={() => navigate("/my-registrations")}>
+  My Registrations
+</button>
 
       {registrationMessage && <p>{registrationMessage}</p>}
 
@@ -117,5 +120,6 @@ function Events() {
     </div>
   );
 }
+
 
 export default Events;
