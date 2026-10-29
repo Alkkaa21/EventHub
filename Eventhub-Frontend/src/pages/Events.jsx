@@ -156,6 +156,12 @@ function Events() {
           <button className="secondary-button" onClick={handleLogout}>
             Logout
           </button>
+          <button
+  className="register-button"
+  onClick={() => navigate("/create-event")}
+>
+  + Create Event
+</button>
         </div>
       </header>
 
