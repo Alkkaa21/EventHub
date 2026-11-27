@@ -1,6 +1,8 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../api";
+import { throwIfNotOk, getErrorMessage, ApiError } from "../errors";
 
 const EVENTS_URL = "http://127.0.0.1:8000/events/";
 const REGISTER_URL = "http://127.0.0.1:8000/events/register/";
@@ -73,66 +75,53 @@ function Events() {
   }
 
   useEffect(() => {
-    async function fetchEvents() {
-      try {
-        const response = await fetch(EVENTS_URL);
-
-        if (!response.ok) {
-          throw new Error("Could not load events. Please try again.");
-        }
-
-        const data = await response.json();
-        setEvents(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchEvents();
-  }, []);
-
-  async function handleRegister(event) {
-    setRegistrationMessage("");
-    setRegistrationMessageType("");
-    setRegisteringEventId(event.id);
-
+  async function fetchEvents() {
     try {
-      const response = await fetch(REGISTER_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access")}`,
-        },
-        body: JSON.stringify({
-          event: event.id,
-        }),
-      });
+      const response = await fetch(EVENTS_URL);
+      await throwIfNotOk(response);
 
       const data = await response.json();
-
-      if (!response.ok) {
-        const message =
-          data.non_field_errors?.[0] ||
-          data.event?.[0] ||
-          data.detail ||
-          "Registration failed. Please try again.";
-
-        throw new Error(message);
-      }
-
-      setRegistrationMessage(
-        `You're registered for ${event.title}!`
-      );
-      setRegistrationMessageType("success");
+      setEvents(data);
     } catch (err) {
-      setRegistrationMessage(err.message);
-      setRegistrationMessageType("error");
+      setError(getErrorMessage(err));
     } finally {
-      setRegisteringEventId(null);
+      setLoading(false);
     }
   }
+
+  fetchEvents();
+}, []);
+
+  async function handleRegister(event) {
+  setRegistrationMessage("");
+  setRegistrationMessageType("");
+  setRegisteringEventId(event.id);
+
+  try {
+    const response = await apiFetch(REGISTER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event: event.id }),
+    });
+    await throwIfNotOk(response);
+
+    setRegistrationMessage(`You're registered for ${event.title}!`);
+    setRegistrationMessageType("success");
+  } catch (err) {
+    // 401 here means refresh and retry both failed: send to login
+    if (err instanceof ApiError && err.status === 401) {
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
+      navigate("/");
+      return;
+    }
+
+    setRegistrationMessage(getErrorMessage(err));
+    setRegistrationMessageType("error");
+  } finally {
+    setRegisteringEventId(null);
+  }
+}
 
   return (
     <main className="events-page">

@@ -1,4 +1,5 @@
-
+import { apiFetch } from "../api";
+import { throwIfNotOk, getErrorMessage } from "../errors";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -35,26 +36,16 @@ function MyRegistrations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+    useEffect(() => {
     async function fetchRegistrations() {
       try {
-        const response = await fetch(MY_REGISTRATIONS_URL, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access")}`,
-          },
-        });
+        const response = await apiFetch(MY_REGISTRATIONS_URL);
+        await throwIfNotOk(response);
 
         const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.detail || "Could not load your registrations."
-          );
-        }
-
         setRegistrations(data);
       } catch (err) {
-        setError(err.message);
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }

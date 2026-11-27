@@ -1,4 +1,5 @@
-
+import { apiFetch } from "../api";
+import { throwIfNotOk, getErrorMessage } from "../errors";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -30,76 +31,51 @@ function CreateEvent() {
     }));
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setError("");
-    setSuccess("");
+    async function handleSubmit(event) {
+  event.preventDefault();
+  setError("");
+  setSuccess("");
 
-    const capacity = Number(formData.capacity);
-    const price = Number(formData.price);
+  const capacity = Number(formData.capacity);
+  const price = Number(formData.price);
 
-    if (!Number.isInteger(capacity) || capacity <= 0) {
-      setError("Capacity must be a positive whole number.");
-      return;
-    }
-
-    if (!Number.isFinite(price) || price < 0) {
-      setError("Price cannot be negative.");
-      return;
-    }
-
-    const accessToken = localStorage.getItem("access");
-
-    if (!accessToken) {
-      setError("Please log in before creating an event.");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          ...formData,
-          capacity,
-          price: price.toFixed(2),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message =
-          typeof data === "object"
-            ? Object.entries(data)
-                .map(([field, messages]) => {
-                  const text = Array.isArray(messages)
-                    ? messages.join(" ")
-                    : String(messages);
-                  return `${field}: ${text}`;
-                })
-                .join(" ")
-            : "Could not create the event.";
-
-        setError(message || "Could not create the event.");
-        return;
-      }
-
-      setSuccess("Event created successfully!");
-      setTimeout(() => navigate("/events"), 1000);
-    } catch {
-      setError(
-        "Cannot connect to the server. Check that Django is running."
-      );
-    } finally {
-      setIsLoading(false);
-    }
+  if (!Number.isInteger(capacity) || capacity <= 0) {
+    setError("Capacity must be a positive whole number.");
+    return;
   }
+
+  if (!Number.isFinite(price) || price < 0) {
+    setError("Price cannot be negative.");
+    return;
+  }
+
+  if (!localStorage.getItem("refresh")) {
+    setError("Please log in before creating an event.");
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    const response = await apiFetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...formData,
+        capacity,
+        price: price.toFixed(2),
+      }),
+    });
+    await throwIfNotOk(response);
+
+    setSuccess("Event created successfully!");
+    setTimeout(() => navigate("/events"), 1000);
+  } catch (err) {
+    setError(getErrorMessage(err));
+  } finally {
+    setIsLoading(false);
+  }
+}
 
   return (
     <main className="create-event-page">
