@@ -107,6 +107,19 @@ function Events() {
 
     setRegistrationMessage(`You're registered for ${event.title}!`);
     setRegistrationMessageType("success");
+
+    // Update spots_left and registered_count locally
+    setEvents((prev) =>
+      prev.map((e) =>
+        e.id === event.id
+          ? {
+              ...e,
+              registered_count: (e.registered_count || 0) + 1,
+              spots_left: Math.max(0, (e.spots_left ?? e.capacity) - 1),
+            }
+          : e
+      )
+    );
   } catch (err) {
     // 401 here means refresh and retry both failed: send to login
     if (err instanceof ApiError && err.status === 401) {
@@ -179,16 +192,18 @@ function Events() {
           {events.map((event) => {
             const past = hasEventPassed(event);
             const isRegistering = registeringEventId === event.id;
+            const spotsLeft = event.spots_left !== undefined ? event.spots_left : event.capacity - (event.registered_count || 0);
+            const isSoldOut = spotsLeft <= 0;
 
             return (
               <article className="event-card" key={event.id}>
                 <div className="event-card-header">
                   <span
                     className={`event-status ${
-                      past ? "past" : "upcoming"
+                      past ? "past" : isSoldOut ? "sold-out" : "upcoming"
                     }`}
                   >
-                    {past ? "Past event" : "Upcoming"}
+                    {past ? "Past event" : isSoldOut ? "Sold Out" : "Upcoming"}
                   </span>
 
                   <span className="event-price">
@@ -217,19 +232,30 @@ function Events() {
 
                   <p>
                     <span aria-hidden="true">👥</span>
-                    <span>Capacity: {event.capacity}</span>
+                    <span>
+                      {event.registered_count ?? 0} registered / {event.capacity} total
+                    </span>
+                  </p>
+
+                  <p>
+                    <span aria-hidden="true">🎟️</span>
+                    <span>
+                      {isSoldOut ? "0 spots left (Sold Out)" : `${spotsLeft} spots left`}
+                    </span>
                   </p>
                 </div>
 
                 <button
                   className="register-button"
                   onClick={() => handleRegister(event)}
-                  disabled={past || isRegistering}
+                  disabled={past || isSoldOut || isRegistering}
                 >
                   {isRegistering
                     ? "Registering..."
                     : past
                     ? "Event has ended"
+                    : isSoldOut
+                    ? "Sold Out"
                     : "Register"}
                 </button>
               </article>

@@ -163,3 +163,54 @@ class EventHubAPITests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # 9. Capacity and remaining-seat calculations in the event list response.
+    def test_event_list_capacity_and_remaining_seats(self):
+        # future_event has capacity=1, initially registered_count=0, spots_left=1
+        response = self.client.get("/events/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        target = next(
+            (e for e in response.data if e["id"] == self.future_event.id), None
+        )
+        self.assertIsNotNone(target)
+        self.assertEqual(target["registered_count"], 0)
+        self.assertEqual(target["spots_left"], 1)
+
+        # Register user1 for future_event
+        Registration.objects.create(user=self.user1, event=self.future_event)
+
+        response2 = self.client.get("/events/")
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+        target2 = next(
+            (e for e in response2.data if e["id"] == self.future_event.id), None
+        )
+        self.assertEqual(target2["registered_count"], 1)
+        self.assertEqual(target2["spots_left"], 0)
+
+    # 10. Query count remains constant (no N+1 queries) as events scale.
+    def test_event_list_constant_queries(self):
+        # Warmup or baseline query count with 2 events
+        with self.assertNumQueries(1):
+            response = self.client.get("/events/")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Create 10 more events and some registrations
+        tomorrow = timezone.now().date() + timedelta(days=5)
+        for i in range(10):
+            ev = Event.objects.create(
+                creator=self.user1,
+                title=f"Batch Event {i}",
+                description="desc",
+                date=tomorrow,
+                time=time(11, 0),
+                venue="Hall",
+                capacity=5,
+                price=0,
+            )
+            Registration.objects.create(user=self.user1, event=ev)
+
+        # Query count must remain exactly 1 despite having 12 events
+        with self.assertNumQueries(1):
+            response = self.client.get("/events/")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(len(response.data), 12)

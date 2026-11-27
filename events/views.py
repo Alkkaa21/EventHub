@@ -1,3 +1,4 @@
+from django.db.models import Count, F
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -9,7 +10,10 @@ from .serializers import EventSerializer, RegistrationSerializer
 
 class EventListView(APIView):
     def get(self, request):
-        events = Event.objects.all()
+        events = Event.objects.annotate(
+            registered_count=Count("registration"),
+            spots_left=F("capacity") - Count("registration"),
+        ).order_by("date", "time")
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
 

@@ -307,6 +307,12 @@ code {
   border: 1px solid #666;
 }
 
+.event-status.sold-out {
+  color: #ff9898;
+  border: 1px solid #c94c4c;
+  background: rgba(201, 76, 76, 0.15);
+}
+
 .event-price {
   font-weight: 700;
 }

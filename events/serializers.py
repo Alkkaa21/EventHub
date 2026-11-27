@@ -8,6 +8,9 @@ from .models import Event, Registration
 
 
 class EventSerializer(serializers.ModelSerializer):
+    registered_count = serializers.IntegerField(read_only=True, default=0)
+    spots_left = serializers.IntegerField(read_only=True, default=0)
+
     class Meta:
         model = Event
         fields = "__all__"
