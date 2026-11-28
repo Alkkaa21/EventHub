@@ -20,6 +20,7 @@ class EventSerializer(serializers.ModelSerializer):
 class RegistrationSerializer(serializers.ModelSerializer):
     event_title = serializers.CharField(source="event.title", read_only=True)
     event_date = serializers.DateField(source="event.date", read_only=True)
+    event_time = serializers.TimeField(source="event.time", read_only=True)
     event_venue = serializers.CharField(source="event.venue", read_only=True)
 
     class Meta:
@@ -29,6 +30,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
             "event",
             "event_title",
             "event_date",
+            "event_time",
             "event_venue",
             "registered_at",
         ]

@@ -214,3 +214,53 @@ class EventHubAPITests(APITestCase):
             response = self.client.get("/events/")
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(len(response.data), 12)
+
+    # 11. Successful cancellation returns 204 and frees up the seat.
+    def test_cancel_registration_success(self):
+        reg = Registration.objects.create(user=self.user1, event=self.future_event)
+        self.client.force_authenticate(user=self.user1)
+
+        response = self.client.delete(f"/events/registrations/{reg.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Registration.objects.filter(id=reg.id).exists())
+
+        # Verification that the freed seat becomes available
+        list_response = self.client.get("/events/")
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        target = next(
+            (e for e in list_response.data if e["id"] == self.future_event.id), None
+        )
+        self.assertEqual(target["registered_count"], 0)
+        self.assertEqual(target["spots_left"], 1)
+
+    # 12. Cancellation by a different user returns 404.
+    def test_cancel_registration_by_different_user_returns_404(self):
+        reg = Registration.objects.create(user=self.user1, event=self.future_event)
+        self.client.force_authenticate(user=self.user2)
+
+        response = self.client.delete(f"/events/registrations/{reg.id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Registration.objects.filter(id=reg.id).exists())
+
+    # 13. Cancellation after the event has started returns 400.
+    def test_cancel_registration_after_event_started_returns_400(self):
+        reg = Registration.objects.create(user=self.user1, event=self.past_event)
+        self.client.force_authenticate(user=self.user1)
+
+        response = self.client.delete(f"/events/registrations/{reg.id}/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("started", str(response.data))
+        self.assertTrue(Registration.objects.filter(id=reg.id).exists())
+
+    # 14. Cancellation of a nonexistent registration returns 404.
+    def test_cancel_nonexistent_registration_returns_404(self):
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.delete("/events/registrations/99999/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    # 15. Unauthenticated user cannot cancel registration.
+    def test_cancel_registration_unauthenticated_returns_401(self):
+        reg = Registration.objects.create(user=self.user1, event=self.future_event)
+        response = self.client.delete(f"/events/registrations/{reg.id}/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+

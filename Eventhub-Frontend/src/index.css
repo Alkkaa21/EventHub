@@ -178,6 +178,11 @@ code {
   white-space: nowrap;
 }
 
+.status-label.past {
+  border: 1px solid #666;
+  color: #c0c0c0;
+}
+
 .event-details {
   margin: 20px 0;
 }
@@ -194,6 +199,56 @@ code {
   padding-top: 14px;
   font-size: 0.9rem;
   opacity: 0.7;
+}
+
+.registration-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-top: 1px solid #444;
+  padding-top: 14px;
+}
+
+.cancel-button {
+  background: #ff5252;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: opacity 0.2s;
+}
+
+.cancel-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.cancel-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.registrations-notice {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 22px;
+  text-align: left;
+}
+
+.registrations-notice.success {
+  border: 1px solid #528b65;
+  color: #8dd5a1;
+  background: rgba(82, 139, 101, 0.1);
+}
+
+.registrations-notice.error {
+  border: 1px solid #c94c4c;
+  color: #ff9999;
+  background: rgba(201, 76, 76, 0.1);
 }
 
 .error-message {

@@ -1,4 +1,8 @@
+from datetime import datetime
+
 from django.db.models import Count, F
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -58,3 +62,24 @@ class MyRegistrationsView(APIView):
 
         serializer = RegistrationSerializer(registrations, many=True)
         return Response(serializer.data)
+
+
+class CancelRegistrationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, id):
+        registration = get_object_or_404(Registration, id=id, user=request.user)
+        event = registration.event
+
+        event_datetime = timezone.make_aware(
+            datetime.combine(event.date, event.time),
+            timezone.get_current_timezone(),
+        )
+        if event_datetime <= timezone.now():
+            return Response(
+                {"detail": "Cannot cancel registration after the event has started."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        registration.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
